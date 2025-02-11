@@ -16,8 +16,8 @@ class MainPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             HeroSection(),
-            PopularCoursesSection(),  // Fetches and displays popular courses
-            LatestCoursesSection(),   // Fetches and displays latest courses
+            PopularCoursesSection(),
+            LatestCoursesSection(),
             TestimonialsSection(),
           ],
         ),
