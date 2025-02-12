@@ -1,25 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'pages/catalog_page.dart';
 
-class HeroSection extends StatelessWidget {
+class HeroSection extends StatefulWidget {
   const HeroSection({super.key});
+
+  @override
+  _HeroSectionState createState() => _HeroSectionState();
+}
+
+class _HeroSectionState extends State<HeroSection> {
+  final TextEditingController _searchController = TextEditingController();
+
+  void _performSearch() {
+    String searchTerm = _searchController.text.trim();
+    if (searchTerm.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CatalogPage(searchQuery: searchTerm),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(30),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(30),
+      decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/bgcat.png'), // Change to your image path
-          fit: BoxFit.cover, // Makes sure the image covers the whole container
+          image: AssetImage('assets/bgcat.png'),
+          fit: BoxFit.cover,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(height: 90), // Space at the top
-          Text(
+          const SizedBox(height: 90),
+          const Text(
             "The Best Foreign Language & Technology Tutorials",
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -28,8 +48,8 @@ class HeroSection extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 100), // Space below the title
-          Text(
+          const SizedBox(height: 100),
+          const Text(
             "And the easy way to learn The World",
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -37,51 +57,50 @@ class HeroSection extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-          // Column instead of Row to stack buttons
           Column(
             children: [
               SizedBox(
-                width: double.infinity, // Full width
+                width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
-                    padding: EdgeInsets.symmetric(vertical: 15), // Only vertical padding
+                    padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
-                  child: Text("Start Your Subscription"),
+                  child: const Text("Start Your Subscription"),
                 ),
               ),
-              SizedBox(height: 15), // Space between buttons
+              const SizedBox(height: 15),
               SizedBox(
-                width: double.infinity, // Full width
+                width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => CatalogPage()),
+                      MaterialPageRoute(builder: (context) => const CatalogPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
-                    padding: EdgeInsets.symmetric(vertical: 15), // Only vertical padding
+                    padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
-                  child: Text("Browse Catalog"),
+                  child: const Text("Browse Catalog"),
                 ),
               ),
             ],
           ),
 
-          SizedBox(height: 70),
+          const SizedBox(height: 70),
 
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // Align text to the left
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   "What are you going to learn next?",
                   style: TextStyle(
                     color: Colors.white,
@@ -89,17 +108,33 @@ class HeroSection extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 10), // Space between text and input
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: "Search for courses...",
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: "Search for courses...",
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
                     ),
-                    suffixIcon: Icon(Icons.search),
-                  ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: _performSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.all(14),
+                      ),
+                      child: const Icon(Icons.search),
+                    ),
+                  ],
                 ),
               ],
             ),
