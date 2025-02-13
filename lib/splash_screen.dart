@@ -1,7 +1,8 @@
-// splash_screen.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'main_page.dart';
+import 'dashboard_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,15 +15,16 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
+    _checkAuthentication();
   }
 
-  _navigateToHome() async {
-    await Future.delayed(const Duration(seconds: 3));
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => MainPage()),
-    );
+  Future<void> _checkAuthentication() async {
+    await Future.delayed(const Duration(seconds: 2)); // Simulate loading
+
+    final prefs = await SharedPreferences.getInstance();
+    final bool isAuthenticated = prefs.getBool('isAuthenticated') ?? false;
+
+    Navigator.pushReplacementNamed(context, isAuthenticated ? '/dashboard' : '/main');
   }
 
   @override
