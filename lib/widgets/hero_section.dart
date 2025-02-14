@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'pages/catalog_page.dart';
 
 class HeroSection extends StatefulWidget {

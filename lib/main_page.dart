@@ -4,8 +4,6 @@ import 'package:course/widgets/hero_section.dart';
 import 'package:course/widgets/popular_courses_section.dart';
 import 'package:course/widgets/latest_courses_section.dart';
 import 'package:course/widgets/testimonials_section.dart';
-import 'package:course/pages/login_page.dart';
-import 'package:course/pages/register_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});

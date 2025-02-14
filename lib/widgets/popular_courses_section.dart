@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:course/widgets/course_card.dart';
 import 'package:course/services/course_service.dart';
+import 'package:course/pages/course_detail_page.dart';
 
 class PopularCoursesSection extends StatefulWidget {
   const PopularCoursesSection({super.key});
@@ -28,6 +29,15 @@ class _PopularCoursesSectionState extends State<PopularCoursesSection> {
     });
   }
 
+  void _navigateToCourseDetail(int courseId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CourseDetailPage(courseId: courseId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -46,12 +56,15 @@ class _PopularCoursesSectionState extends State<PopularCoursesSection> {
               ? const Center(child: Text("No popular courses found"))
               : Column(
             children: _popularCourses.map((course) {
-              return CourseCard(
-                title: course["title"],
-                description: course["description"],
-                price: course["price"] != null
-                    ? "\$${course["price"]}"
-                    : "Free",
+              return GestureDetector(
+                onTap: () => _navigateToCourseDetail(course["id"]),
+                child: CourseCard(
+                  title: course["title"],
+                  description: course["description"],
+                  price: course["price"] != null
+                      ? "\$${course["price"]}"
+                      : "Free",
+                ),
               );
             }).toList(),
           ),

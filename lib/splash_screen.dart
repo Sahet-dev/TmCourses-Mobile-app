@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import 'main_page.dart';
-import 'dashboard_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
