@@ -23,11 +23,15 @@ class _PopularCoursesSectionState extends State<PopularCoursesSection> {
 
   Future<void> _fetchCourses() async {
     final data = await _courseService.fetchCourses();
+
     setState(() {
-      _popularCourses = data["popularCourses"];
+      // Convert `popularCourses` map to list
+      _popularCourses = data["popularCourses"].values.toList();
       _isLoading = false;
     });
   }
+
+
 
   void _navigateToCourseDetail(int courseId) {
     Navigator.push(

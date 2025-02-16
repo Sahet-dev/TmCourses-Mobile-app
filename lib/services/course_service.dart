@@ -42,29 +42,18 @@ class CourseService {
     }
   }
   final String baseUrl =
-      "https://course-server.sahet-dev.com/api/api-private-courses/";
+      "https://course-server.sahet-dev.com/api/api-courses/";
+
+
 
   Future<Map<String, dynamic>> fetchPrivateCourse(int courseId) async {
     try {
-      final cacheManager = DefaultCacheManager();
-      final cacheKey = "$baseUrl$courseId";
-      final file = await cacheManager.getSingleFile(cacheKey);
-
-      // Check if data exists in cache
-      if (file.existsSync()) {
-        final cachedData = await file.readAsString();
-        return json.decode(cachedData);
-      }
-
-      // Fetch from API if no cache found
       final response = await _dio.get("$baseUrl$courseId");
+
+      print("API Response: ${response.data}"); // Debugging
+
       if (response.statusCode == 200) {
-        final data = response.data;
-
-        // Cache the response
-        await cacheManager.putFile(cacheKey, utf8.encode(json.encode(data)));
-
-        return data;
+        return response.data;
       } else {
         throw Exception("Failed to load course details");
       }
@@ -73,4 +62,6 @@ class CourseService {
       return {};
     }
   }
+
+
 }
