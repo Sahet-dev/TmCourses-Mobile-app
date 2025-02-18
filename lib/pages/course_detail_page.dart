@@ -47,9 +47,12 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
     _disposeVideoPlayer(); // Dispose previous player
 
     if (videoUrl != null && videoUrl.isNotEmpty) {
+      print("Video URL: $videoUrl"); // Debugging
       _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl))
         ..initialize().then((_) {
           setState(() {});
+        }).catchError((error) {
+          print("Video initialization error: $error");
         });
 
       _chewieController = ChewieController(
@@ -58,8 +61,11 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
         autoPlay: false,
         looping: false,
       );
+    } else {
+      print("Invalid video URL");
     }
   }
+
 
   void _disposeVideoPlayer() {
     _videoController?.dispose();
@@ -180,12 +186,15 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
         videoUrl != null && videoUrl.isNotEmpty
             ? AspectRatio(
           aspectRatio: 16 / 9,
-          child: _chewieController != null &&
-              _chewieController!.videoPlayerController.value.isInitialized
+          child: (_chewieController != null &&
+              _videoController != null &&
+              _videoController!.value.isInitialized)
               ? Chewie(controller: _chewieController!)
               : const Center(child: CircularProgressIndicator()),
         )
             : const Text("No video available for this lesson."),
+
+
         const SizedBox(height: 10),
         Text(
           'Description: ${_selectedLesson?["markdown_text"] ?? ''}',
