@@ -5,7 +5,6 @@ import 'package:course/services/course_service.dart';
 
 class CourseDetailPage extends StatefulWidget {
   final int courseId;
-
   const CourseDetailPage({super.key, required this.courseId});
 
   @override
@@ -28,11 +27,18 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
   }
 
   Future<void> _fetchCourseDetails() async {
-    final response = await _courseService.fetchPrivateCourse(widget.courseId);
-    setState(() {
-      _course = response["course"];
-      _isLoading = false;
-    });
+    try {
+      final response = await _courseService.fetchPrivateCourse(widget.courseId);
+      setState(() {
+        _course = response["course"];
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching course details: $e");
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _selectLesson(Map<String, dynamic> lesson) {
@@ -44,32 +50,35 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
   }
 
   void _initializeVideoPlayer(String? videoUrl) {
-    _disposeVideoPlayer(); // Dispose previous player
-
+    _disposeVideoPlayer();
     if (videoUrl != null && videoUrl.isNotEmpty) {
-      print("Video URL: $videoUrl"); // Debugging
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl))
+      // Check if the URL is relative and prepend the base URL if necessary.
+      String finalUrl = videoUrl;
+      if (!videoUrl.startsWith("http")) {
+        finalUrl = "https://course-server.sahet-dev.com/storage/" + finalUrl;
+      }
+      print("Initializing video player with URL: $finalUrl");
+      _videoController = VideoPlayerController.network(finalUrl)
         ..initialize().then((_) {
-          setState(() {});
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController!,
+            autoPlay: false,
+            looping: false,
+          );
+          setState(() {}); // Update the UI once the video is initialized.
         }).catchError((error) {
           print("Video initialization error: $error");
         });
-
-      _chewieController = ChewieController(
-        videoPlayerController: _videoController!,
-        aspectRatio: 16 / 9,
-        autoPlay: false,
-        looping: false,
-      );
     } else {
-      print("Invalid video URL");
+      print("Invalid video URL provided: $videoUrl");
     }
   }
 
-
   void _disposeVideoPlayer() {
-    _videoController?.dispose();
     _chewieController?.dispose();
+    _chewieController = null;
+    _videoController?.dispose();
+    _videoController = null;
   }
 
   @override
@@ -124,8 +133,10 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Lessons",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text(
+                "Lessons",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () {
@@ -185,16 +196,16 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
         const SizedBox(height: 10),
         videoUrl != null && videoUrl.isNotEmpty
             ? AspectRatio(
-          aspectRatio: 16 / 9,
-          child: (_chewieController != null &&
+          aspectRatio: _videoController?.value.aspectRatio ?? 16 / 9,
+          child: _chewieController != null &&
               _videoController != null &&
-              _videoController!.value.isInitialized)
-              ? Chewie(controller: _chewieController!)
+              _videoController!.value.isInitialized
+              ? Chewie(
+            controller: _chewieController!,
+          )
               : const Center(child: CircularProgressIndicator()),
         )
             : const Text("No video available for this lesson."),
-
-
         const SizedBox(height: 10),
         Text(
           'Description: ${_selectedLesson?["markdown_text"] ?? ''}',
