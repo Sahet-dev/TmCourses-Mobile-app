@@ -20,6 +20,10 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
 
+  // Tab selection: "guides" or "comments" with ToggleButtons.
+  String _selectedTab = "guides";
+  List<bool> _isSelected = [true, false];
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +49,8 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
     setState(() {
       _selectedLesson = lesson;
       _isSidebarOpen = false;
+      _selectedTab = "guides"; // Reset to guides when a new lesson is selected.
+      _isSelected = [true, false];
     });
     _initializeVideoPlayer(lesson["video_url"]);
   }
@@ -58,7 +64,7 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
         finalUrl = "https://course-server.sahet-dev.com/storage/" + finalUrl;
       }
       print("Initializing video player with URL: $finalUrl");
-      _videoController = VideoPlayerController.network(finalUrl)
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(finalUrl))
         ..initialize().then((_) {
           _chewieController = ChewieController(
             videoPlayerController: _videoController!,
@@ -186,6 +192,10 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
 
   Widget _buildLessonContent() {
     String? videoUrl = _selectedLesson?["video_url"];
+    // Retrieve lessons list and determine current lesson index.
+    final List lessons = _course?["lessons"] ?? [];
+    final int currentIndex = lessons.indexOf(_selectedLesson);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -207,9 +217,91 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
         )
             : const Text("No video available for this lesson."),
         const SizedBox(height: 10),
-        Text(
+        // Navigation buttons for previous and next lesson.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ElevatedButton(
+              onPressed: currentIndex > 0
+                  ? () => _selectLesson(lessons[currentIndex - 1])
+                  : null,
+              child: const Text("Previous"),
+            ),
+            ElevatedButton(
+              onPressed: currentIndex < lessons.length - 1
+                  ? () => _selectLesson(lessons[currentIndex + 1])
+                  : null,
+              child: const Text("Next"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // ToggleButtons for Guides and Comments.
+        Center(
+          child: ToggleButtons(
+            color: Colors.black.withOpacity(0.60),
+            selectedColor: const Color(0xFF6200EE),
+            selectedBorderColor: const Color(0xFF6200EE),
+            fillColor: const Color(0xFF6200EE).withOpacity(0.08),
+            splashColor: const Color(0xFF6200EE).withOpacity(0.12),
+            hoverColor: const Color(0xFF6200EE).withOpacity(0.04),
+            borderRadius: BorderRadius.circular(4.0),
+            constraints: const BoxConstraints(minHeight: 36.0),
+            isSelected: _isSelected,
+            onPressed: (int index) {
+              setState(() {
+                // Ensure only one button is selected at a time.
+                for (int i = 0; i < _isSelected.length; i++) {
+                  _isSelected[i] = i == index;
+                }
+                _selectedTab = index == 0 ? "guides" : "comments";
+              });
+            },
+            children: const [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.book, size: 18),
+                    SizedBox(width: 4),
+                    Text('Guides'),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.comment, size: 18),
+                    SizedBox(width: 4),
+                    Text('Comments'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 10),
+        // Display content based on selected tab.
+        _selectedTab == "guides"
+            ? Text(
           'Description: ${_selectedLesson?["markdown_text"] ?? ''}',
           style: const TextStyle(fontSize: 16),
+        )
+            : Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              "Comments:",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 5),
+            Text("- User1: Great lesson!"),
+            Text("- User2: I learned a lot."),
+          ],
         ),
       ],
     );
