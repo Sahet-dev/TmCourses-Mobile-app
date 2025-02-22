@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:course/services/auth_service.dart';
+
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -13,6 +17,9 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
   String errorMsg = "";
 
+  // Create an instance of FlutterSecureStorage
+  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
+
   Future<void> login() async {
     setState(() {
       isLoading = true;
@@ -20,22 +27,20 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      Dio dio = Dio();
-      Response response = await dio.post(
-        'https://course-server.sahet-dev.com/api/login',
-        data: {
-          "email": emailController.text,
-          "password": passwordController.text
-        },
-      );
+      ApiService apiService = ApiService();
+      Response response = await apiService.post('login', {
+        "email": emailController.text,
+        "password": passwordController.text
+      });
 
       if (response.statusCode == 200) {
         String token = response.data["token"];
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
-        print("Token saved: $token");
 
-        // Navigate to home or dashboard
+        // Store token securely
+        await secureStorage.write(key: 'token', value: token);
+        print("Token saved securely: $token");
+
+        // Navigate to home
         Navigator.pushReplacementNamed(context, "/home");
       }
     } catch (e) {
@@ -49,6 +54,7 @@ class _LoginPageState extends State<LoginPage> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

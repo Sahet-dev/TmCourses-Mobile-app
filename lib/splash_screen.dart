@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:async';
 
 class SplashScreen extends StatefulWidget {
@@ -10,6 +10,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   @override
   void initState() {
     super.initState();
@@ -17,19 +19,20 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthentication() async {
-    await Future.delayed(const Duration(seconds: 2)); // Simulate loading
+    await Future.delayed(const Duration(seconds: 2)); // Simulate loading delay
 
-    final prefs = await SharedPreferences.getInstance();
-    final bool isAuthenticated = prefs.getBool('isAuthenticated') ?? false;
+    String? authToken = await _secureStorage.read(key: 'token');
 
-    Navigator.pushReplacementNamed(context, isAuthenticated ? '/dashboard' : '/main');
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, authToken != null ? '/home' : '/main');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.deepPurple,
-      body: Center(
+      body: const Center(
         child: Text(
           'Welcome to Flutter!',
           style: TextStyle(fontSize: 30, color: Colors.white),
