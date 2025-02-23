@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:course/dashboard/activity_dashboard.dart';
+import 'package:course/dashboard/account_widget.dart';
+import 'package:course/dashboard/bookmarks_widget.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -173,28 +175,28 @@ class _DashboardPageState extends State<DashboardPage>
 
 
 /// Placeholder for the Account tab content.
-class AccountWidget extends StatelessWidget {
-  const AccountWidget({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Account Content"));
-  }
-}
+// class AccountWidget extends StatelessWidget {
+//   const AccountWidget({super.key});
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Center(child: Text("Account Content"));
+//   }
+// }
 
 /// Placeholder for the Bookmarks tab content.
-class BookmarksWidget extends StatelessWidget {
-  const BookmarksWidget({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Bookmarks Content"));
-  }
-}
+// class BookmarksWidget extends StatelessWidget {
+//   const BookmarksWidget({super.key});
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Center(child: Text("Bookmarks Content"));
+//   }
+// }
 
 /// Placeholder for the Completed tab content.
 class CompletedWidget extends StatelessWidget {
   const CompletedWidget({super.key});
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text("Completed Content"));
+    return const Center(child: Text("Not found"));
   }
 }
