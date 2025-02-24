@@ -344,7 +344,7 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
               Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    // Browse Catalog action
+                    Navigator.pushNamed(context, '/courseCatalog');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue[500],
