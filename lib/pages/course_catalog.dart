@@ -2,7 +2,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:course/services/auth_service.dart';
-import 'package:course/pages/course_detail_page.dart';
 
 /// Model representing a course.
 class Course {
@@ -127,10 +126,7 @@ class _CourseCatalogState extends State<CourseCatalog> {
     }
   }
 
-  /// Navigates to the course detail page.
-  void _openCourse(int courseId) {
-    Navigator.pushNamed(context, '/courseDetail', arguments: {'id': courseId});
-  }
+
 
   void _navigateToCourseDetail(int courseId) {
     Navigator.pushNamed(

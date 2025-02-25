@@ -7,8 +7,8 @@ class ApiService {
 
   ApiService() {
     _dio.options.baseUrl = "https://course-server.sahet-dev.com/api/";
-    _dio.options.connectTimeout = const Duration(seconds: 10);
-    _dio.options.receiveTimeout = const Duration(seconds: 10);
+    _dio.options.connectTimeout = const Duration(seconds: 610);
+    _dio.options.receiveTimeout = const Duration(seconds: 610);
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {

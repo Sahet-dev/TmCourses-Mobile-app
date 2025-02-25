@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:course/services/course_service.dart';
+import 'package:course/widgets/lesson_comments.dart';
 
 class CourseDetailPage extends StatefulWidget {
   final int courseId;
@@ -52,6 +53,7 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
       _selectedTab = "guides"; // Reset to guides when a new lesson is selected.
       _isSelected = [true, false];
     });
+
     _initializeVideoPlayer(lesson["video_url"]);
   }
 
@@ -168,27 +170,33 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
   }
 
   Widget _buildCourseContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_selectedLesson == null) ...[
-          Text(
-            _course?["title"] ?? '',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          Text(_course?["description"] ?? ''),
-          const SizedBox(height: 10),
-          Text(
-            _course?["price"] != null ? "\$${_course?["price"]}" : "Free",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-        ],
-        if (_selectedLesson != null) _buildLessonContent(),
-      ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_selectedLesson == null) ...[
+              Text(
+                _course?["title"] ?? '',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(_course?["description"] ?? ''),
+              const SizedBox(height: 10),
+              Text(
+                _course?["price"] != null ? "\$${_course?["price"]}" : "Free",
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+            ],
+            if (_selectedLesson != null) _buildLessonContent(),
+          ],
+        ),
+      ),
     );
   }
+
 
   Widget _buildLessonContent() {
     String? videoUrl = _selectedLesson?["video_url"];
@@ -250,7 +258,6 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
             isSelected: _isSelected,
             onPressed: (int index) {
               setState(() {
-                // Ensure only one button is selected at a time.
                 for (int i = 0; i < _isSelected.length; i++) {
                   _isSelected[i] = i == index;
                 }
@@ -283,7 +290,6 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
             ],
           ),
         ),
-
         const SizedBox(height: 10),
         // Display content based on selected tab.
         _selectedTab == "guides"
@@ -291,19 +297,20 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
           'Description: ${_selectedLesson?["markdown_text"] ?? ''}',
           style: const TextStyle(fontSize: 16),
         )
-            : Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              "Comments:",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 5),
-            Text("- User1: Great lesson!"),
-            Text("- User2: I learned a lot."),
-          ],
+            : Container(
+          // Provide a fixed height for the comments section.
+          height: 300, // Adjust this value as needed
+          child: LessonComments(
+            // lessonId: _selectedLesson?["id"],
+            lessonId: _selectedLesson?["id"] is int
+                ? _selectedLesson!["id"]
+                : int.tryParse(_selectedLesson?["id"] ?? '') ?? 0,
+            courseId: widget.courseId,
+
+          ),
         ),
       ],
     );
   }
+
 }

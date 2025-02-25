@@ -73,7 +73,6 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
       print("API Response: ${response.data}");
       List<dynamic> data = response.data;
 
-      List<Map<String, dynamic>> featuredCourses = [];
 
       List<int> newMonthlyData = List.filled(12, 0);
       for (var item in data) {
