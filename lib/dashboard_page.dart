@@ -14,7 +14,6 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  // Create an instance of FlutterSecureStorage to manage the token.
   final FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
   @override
@@ -29,14 +28,11 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  /// Logout function: delete the token and navigate to login.
   Future<void> _logout() async {
     await secureStorage.delete(key: 'token');
     Navigator.pushReplacementNamed(context, '/main');
   }
 
-  /// Builds a custom Tab widget that shows larger icons only in portrait
-  /// and both icons and text in landscape mode.
   Widget _buildTab(
       String label, IconData iconSelected, IconData iconUnselected, int index) {
     return AnimatedBuilder(
@@ -69,7 +65,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  /// Builds an elegant Drawer (sidebar) with navigation items and a logout button.
   Widget _buildDrawer() {
     return Drawer(
       child: Container(
@@ -174,23 +169,7 @@ class _DashboardPageState extends State<DashboardPage>
 
 
 
-/// Placeholder for the Account tab content.
-// class AccountWidget extends StatelessWidget {
-//   const AccountWidget({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Center(child: Text("Account Content"));
-//   }
-// }
 
-/// Placeholder for the Bookmarks tab content.
-// class BookmarksWidget extends StatelessWidget {
-//   const BookmarksWidget({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Center(child: Text("Bookmarks Content"));
-//   }
-// }
 
 /// Placeholder for the Completed tab content.
 class CompletedWidget extends StatelessWidget {

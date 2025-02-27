@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:course/widgets/course_card.dart';
 import 'package:course/services/course_service.dart';
+import 'package:course/pages/course_detail_page.dart';
 
 class LatestCoursesSection extends StatefulWidget {
   const LatestCoursesSection({super.key});
@@ -28,6 +29,15 @@ class _LatestCoursesSectionState extends State<LatestCoursesSection> {
     });
   }
 
+  void _navigateToCourseDetail(int courseId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CourseDetailPage(courseId: courseId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -48,10 +58,10 @@ class _LatestCoursesSectionState extends State<LatestCoursesSection> {
             children: _latestCourses.map((course) {
               return CourseCard(
                 title: course["title"],
+                imageUrl: "https://course-server.sahet-dev.com/storage/${course["thumbnail"]}",
                 description: course["description"],
-                price: course["price"] != null
-                    ? "\$${course["price"]}"
-                    : "Free",
+                price: course["price"] != null ? "\$${course["price"]}" : "Free",
+                onTap: () => _navigateToCourseDetail(course["id"]),
               );
             }).toList(),
           ),

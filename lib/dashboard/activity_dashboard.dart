@@ -1,14 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:course/services/auth_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:course/pages/course_detail_page.dart';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class ActivityDashboard extends StatefulWidget {
   const ActivityDashboard({super.key});
-
-
 
   @override
   State<ActivityDashboard> createState() => _ActivityDashboardState();
@@ -22,6 +22,16 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
   List<Map<String, dynamic>> featuredCourses = [];
   List<int> monthlyData = List.filled(12, 0);
 
+  // Create a cache manager instance.
+  final DefaultCacheManager cacheManager = DefaultCacheManager();
+
+  // Connectivity check helper function.
+  Future<bool> hasInternetConnection() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    bool hasConnection = connectivityResult != ConnectivityResult.none;
+    print("Connectivity check: $connectivityResult, hasConnection: $hasConnection");
+    return hasConnection;
+  }
 
   void _navigateToCourseDetail(int courseId) {
     Navigator.push(
@@ -31,7 +41,6 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
       ),
     );
   }
-
 
   @override
   void initState() {
@@ -46,55 +55,161 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
     );
   }
 
+  // Modified to check connectivity and use cache.
   void fetchCoursesData() async {
+    final String cacheKey = 'user_latest_activities';
     try {
+      bool online = await hasInternetConnection();
+      if (!online) {
+        print("Offline mode: Attempting to load courses data from cache with key: $cacheKey");
+        // Offline: attempt to load from cache.
+        final fileInfo = await cacheManager.getFileFromCache(cacheKey);
+        if (fileInfo != null) {
+          final cachedData = await fileInfo.file.readAsString();
+          print("Cached courses data found: $cachedData");
+          final jsonData = json.decode(cachedData);
+          setState(() {
+            latestActivities = List<Map<String, dynamic>>.from(jsonData["latestCourses"] ?? []);
+            popularCourses = List<Map<String, dynamic>>.from(jsonData["popularCourses"] ?? []);
+          });
+          return;
+        } else {
+          setState(() {
+            error = "No internet and no cached courses data available.";
+          });
+          print("No cached courses data found for key: $cacheKey");
+          return;
+        }
+      }
+
+      // Online: fetch from API.
+      print("Online mode: Fetching courses data from API");
       ApiService apiService = ApiService();
       Response response = await apiService.get('user/latest-activities');
-      setState(() {
-        latestActivities = List<Map<String, dynamic>>.from(response.data["latestCourses"]);
-        popularCourses = List<Map<String, dynamic>>.from(response.data["popularCourses"]);
-      });
+      if (response.statusCode == 200) {
+        print("API response for courses data: ${response.data}");
+        // Cache the API response as JSON.
+        await cacheManager.putFile(
+          cacheKey,
+          utf8.encode(json.encode(response.data)),
+          fileExtension: 'json',
+          maxAge: const Duration(days: 1),
+        );
+        print("Courses data cached with key: $cacheKey");
+        setState(() {
+          latestActivities = List<Map<String, dynamic>>.from(response.data["latestCourses"] ?? []);
+          popularCourses = List<Map<String, dynamic>>.from(response.data["popularCourses"] ?? []);
+        });
+      } else {
+        throw Exception("Failed to load courses data");
+      }
     } catch (err) {
-      setState(() {
-        error = "Failed to load courses data: ${err.toString()}";
-      });
+      print("Error in fetchCoursesData: ${err.toString()}");
+      // On error, attempt to load cached data.
+      final fileInfo = await cacheManager.getFileFromCache(cacheKey);
+      if (fileInfo != null) {
+        final cachedData = await fileInfo.file.readAsString();
+        print("Using cached courses data after error: $cachedData");
+        final jsonData = json.decode(cachedData);
+        setState(() {
+          latestActivities = List<Map<String, dynamic>>.from(jsonData["latestCourses"] ?? []);
+          popularCourses = List<Map<String, dynamic>>.from(jsonData["popularCourses"] ?? []);
+        });
+      } else {
+        setState(() {
+          error = "Failed to load courses data: ${err.toString()}";
+        });
+      }
     }
   }
 
+  // Modified to check connectivity and use cache.
   void fetchActivityData() async {
     setState(() {
       isLoading = true;
       error = null;
     });
-
+    final String cacheKey = 'user_activities';
     try {
+      bool online = await hasInternetConnection();
+      if (!online) {
+        print("Offline mode: Attempting to load activity data from cache with key: $cacheKey");
+        // Offline: load from cache.
+        final fileInfo = await cacheManager.getFileFromCache(cacheKey);
+        if (fileInfo != null) {
+          final cachedData = await fileInfo.file.readAsString();
+          print("Cached activity data found: $cachedData");
+          List<dynamic> data = json.decode(cachedData);
+          _processActivityData(data);
+        } else {
+          setState(() {
+            error = "No internet and no cached activity data available.";
+          });
+          print("No cached activity data found for key: $cacheKey");
+        }
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+
+      // Online: fetch from API.
+      print("Online mode: Fetching activity data from API");
       ApiService apiService = ApiService();
       Response response = await apiService.get('user/activities');
-      print("API Response: ${response.data}");
-      List<dynamic> data = response.data;
-
-
-      List<int> newMonthlyData = List.filled(12, 0);
-      for (var item in data) {
-        String monthStr = item["month"];
-        int interactionCount = item["interaction_count"] ?? 0;
-        int monthIndex = int.tryParse(monthStr.split('-')[1]) != null
-            ? int.parse(monthStr.split('-')[1]) - 1
-            : 0;
-        newMonthlyData[monthIndex] = interactionCount;
+      if (response.statusCode == 200) {
+        print("API response for activity data: ${response.data}");
+        // Cache the API response.
+        await cacheManager.putFile(
+          cacheKey,
+          utf8.encode(json.encode(response.data)),
+          fileExtension: 'json',
+          maxAge: const Duration(days: 1),
+        );
+        print("Activity data cached with key: $cacheKey");
+        List<dynamic> data = response.data;
+        _processActivityData(data);
+      } else {
+        throw Exception("Failed to load activity data");
       }
-      setState(() {
-        monthlyData = newMonthlyData;
-      });
     } catch (err) {
-      setState(() {
-        error = "Failed to load activity data: ${err.toString()}";
-      });
+      print("Error in fetchActivityData: ${err.toString()}");
+      // On error, attempt to load from cache.
+      final fileInfo = await cacheManager.getFileFromCache(cacheKey);
+      if (fileInfo != null) {
+        final cachedData = await fileInfo.file.readAsString();
+        print("Using cached activity data after error: $cachedData");
+        List<dynamic> data = json.decode(cachedData);
+        _processActivityData(data);
+      } else {
+        setState(() {
+          error = "Failed to load activity data: ${err.toString()}";
+        });
+        print("No cached activity data found for key: $cacheKey after error");
+      }
     } finally {
       setState(() {
         isLoading = false;
       });
     }
+  }
+
+  // Helper to process activity data into monthlyData.
+  void _processActivityData(List<dynamic> data) {
+    List<int> newMonthlyData = List.filled(12, 0);
+    for (var item in data) {
+      String monthStr = item["month"] ?? "";
+      int interactionCount = item["interaction_count"] ?? 0;
+      if (monthStr.contains('-')) {
+        int? monthIndex = int.tryParse(monthStr.split('-')[1]);
+        if (monthIndex != null && monthIndex > 0 && monthIndex <= 12) {
+          newMonthlyData[monthIndex - 1] = interactionCount;
+        }
+      }
+    }
+    setState(() {
+      monthlyData = newMonthlyData;
+    });
   }
 
   Widget _buildChartSection() {
@@ -123,7 +238,7 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
             height: 320,
             child: LineChart(
               LineChartData(
-                minY: 0, // Ensures the chart starts at 0
+                minY: 0,
                 gridData: FlGridData(show: true),
                 titlesData: FlTitlesData(
                   bottomTitles: AxisTitles(
@@ -169,8 +284,7 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
                     ),
                   ),
                 ],
-              )
-              ,
+              ),
             ),
           ),
         ],
@@ -206,7 +320,7 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
               String imageUrl = baseUrl + (course["thumbnail"] ?? "default.png");
               return GestureDetector(
                 onTap: () {
-                  int courseId = course["id"]; // Ensure this field exists in the course data
+                  int courseId = course["id"];
                   _navigateToCourseDetail(courseId);
                 },
                 child: Container(
@@ -296,6 +410,92 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
     );
   }
 
+  Widget _buildFeaturedCoursesSection(BuildContext context) {
+    String baseUrl = "https://course-server.sahet-dev.com/storage/";
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = constraints.maxWidth > 600 ? 2 : 1;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Featured Courses",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.5,
+                mainAxisExtent: 200,
+              ),
+              itemCount: popularCourses.length,
+              itemBuilder: (context, index) {
+                var course = popularCourses[index];
+                String imageUrl = course["thumbnail"].startsWith("http")
+                    ? course["thumbnail"]
+                    : "$baseUrl${course["thumbnail"]}";
+                return GestureDetector(
+                  onTap: () => _navigateToCourseDetail(course["id"]),
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: Image.network(
+                            imageUrl,
+                            width: double.infinity,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: 120,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image),
+                              );
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            course["title"] ?? "No title",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -367,94 +567,4 @@ class _ActivityDashboardState extends State<ActivityDashboard> {
       ),
     );
   }
-
-  Widget _buildFeaturedCoursesSection(BuildContext context) {
-    String baseUrl = "https://course-server.sahet-dev.com/storage/";
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        int crossAxisCount = constraints.maxWidth > 600 ? 2 : 1;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Featured Courses",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.5,
-                mainAxisExtent: 200,
-              ),
-              itemCount: popularCourses.length,
-              itemBuilder: (context, index) {
-                var course = popularCourses[index];
-                String imageUrl = course["thumbnail"].startsWith("http")
-                    ? course["thumbnail"]
-                    : "$baseUrl${course["thumbnail"]}";
-
-                return GestureDetector(
-                  onTap: () => _navigateToCourseDetail(course["id"]),
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
-                          ),
-                          child: Image.network(
-                            imageUrl,
-                            width: double.infinity,
-                            height: 120,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: double.infinity,
-                                height: 120,
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.broken_image),
-                              );
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            course["title"] ?? "No title",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
 }

@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class LessonComments extends StatefulWidget {
   final int lessonId;
@@ -18,6 +21,8 @@ class _LessonCommentsState extends State<LessonComments> {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
+  // Create a cache manager instance.
+  final DefaultCacheManager _cacheManager = DefaultCacheManager();
 
   List<dynamic> _comments = [];
   bool _isLoading = true;
@@ -48,33 +53,81 @@ class _LessonCommentsState extends State<LessonComments> {
     });
   }
 
-  Future<void> _fetchComments() async {
-    if (widget.lessonId == null) {
-      print("Error: lessonId is null");
-      return;
-    }
+  // Helper method to check connectivity
+  Future<bool> _hasInternetConnection() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    bool hasConnection = connectivityResult != ConnectivityResult.none;
+    print("Connectivity check: $connectivityResult, hasConnection: $hasConnection");
+    return hasConnection;
+  }
 
+  Future<void> _fetchComments() async {
+    final String cacheKey = 'lesson_comments_${widget.lessonId}';
     try {
+      bool online = await _hasInternetConnection();
+      if (!online) {
+        print("Offline mode: loading comments from cache with key: $cacheKey");
+        final fileInfo = await _cacheManager.getFileFromCache(cacheKey);
+        if (fileInfo != null) {
+          final cachedData = await fileInfo.file.readAsString();
+          print("Cached comments data found: $cachedData");
+          final jsonData = json.decode(cachedData);
+          _updateCommentsState(jsonData);
+        } else {
+          print("No cached comments available");
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      print("Online mode: fetching comments for lesson ${widget.lessonId}");
       final response = await _dio.get(
         'https://course-server.sahet-dev.com/api/lessons/${widget.lessonId}/comments',
       );
-
-      setState(() {
-        _comments = response.data;
-        _likedComments.clear();
-        for (var comment in _comments) {
-          if (comment['is_liked'] == true) {
-            _likedComments.add(comment['id']);
-          }
-        }
-        _isLoading = false;
-      });
+      if (response.statusCode == 200) {
+        print("API response for comments: ${response.data}");
+        // Cache the API response as JSON.
+        await _cacheManager.putFile(
+          cacheKey,
+          utf8.encode(json.encode(response.data)),
+          fileExtension: 'json',
+          maxAge: const Duration(days: 1),
+        );
+        _updateCommentsState(response.data);
+      } else {
+        throw Exception("Failed to load comments from API");
+      }
     } catch (e) {
       print("Error fetching comments: $e");
-      setState(() {
-        _isLoading = false;
-      });
+      // Attempt to load from cache on error.
+      final fileInfo = await _cacheManager.getFileFromCache(cacheKey);
+      if (fileInfo != null) {
+        final cachedData = await fileInfo.file.readAsString();
+        print("Using cached comments data after error: $cachedData");
+        final jsonData = json.decode(cachedData);
+        _updateCommentsState(jsonData);
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  // Helper method to update comments state
+  void _updateCommentsState(dynamic data) {
+    setState(() {
+      _comments = data;
+      _likedComments.clear();
+      for (var comment in _comments) {
+        if (comment['is_liked'] == true) {
+          _likedComments.add(comment['id']);
+        }
+      }
+      _isLoading = false;
+    });
   }
 
   Future<void> _likeComment(int commentId) async {
@@ -148,6 +201,7 @@ class _LessonCommentsState extends State<LessonComments> {
       );
 
       if (response.statusCode == 201) {
+        // Refresh comments after posting.
         _fetchComments();
         _commentController.clear();
       }
@@ -471,7 +525,6 @@ class _LessonCommentsState extends State<LessonComments> {
       )
           : OutlinedButton(
         onPressed: () {
-          // Navigate to login - you should implement this
           _showAuthRequiredSnackBar("post a comment");
         },
         style: OutlinedButton.styleFrom(

@@ -42,46 +42,72 @@ class _PopularCoursesSectionState extends State<PopularCoursesSection> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// Section Title
           const Text(
             "Popular Courses",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
-          const SizedBox(height: 10),
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _popularCourses.isEmpty
-              ? const Center(child: Text("No popular courses found"))
-              : Column(
-            children: _popularCourses.map((course) {
-              return GestureDetector(
-                onTap: () => _navigateToCourseDetail(course["id"]),
-                child: CourseCard(
+          const SizedBox(height: 15),
+
+          /// Loading Indicator or Courses
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_popularCourses.isEmpty)
+            const Center(
+              child: Text(
+                "No popular courses found",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            )
+          else
+            Column(
+              children: _popularCourses.map((course) {
+                return CourseCard(
                   title: course["title"],
+                  imageUrl: "https://course-server.sahet-dev.com/storage/${course["thumbnail"]}",
                   description: course["description"],
-                  price: course["price"] != null
-                      ? "\$${course["price"]}"
-                      : "Free",
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 10),
+                  price: course["price"],
+                  onTap: () => _navigateToCourseDetail(course["id"]),
+                );
+              }).toList(),
+            ),
+
+          const SizedBox(height: 20),
+
+          /// See All Courses Button
           Center(
             child: ElevatedButton(
               onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text("See All Courses"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                "See All Courses",
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+
+
 }

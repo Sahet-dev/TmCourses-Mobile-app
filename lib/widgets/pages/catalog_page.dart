@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:course/widgets/course_card.dart';
 
 class CatalogPage extends StatefulWidget {
-  final String? searchQuery; // Accept search query
+  final String? searchQuery;
 
   const CatalogPage({super.key, this.searchQuery});
 
@@ -55,6 +56,11 @@ class _CatalogPageState extends State<CatalogPage> {
     }
   }
 
+  void _navigateToCourseDetail(int courseId) {
+    // Implement your navigation logic
+    print("Navigating to Course ID: $courseId");
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,22 +73,12 @@ class _CatalogPageState extends State<CatalogPage> {
         itemCount: courses.length,
         itemBuilder: (context, index) {
           final course = courses[index];
-          return Card(
-            margin: const EdgeInsets.all(10),
-            child: ListTile(
-              leading: Image.network(
-                "https://course-server.sahet-dev.com/${course['thumbnail']}",
-                width: 50,
-                height: 50,
-                fit: BoxFit.cover,
-              ),
-              title: Text(course['title']),
-              subtitle: Text(course['description']),
-              trailing: Text(
-                course['price'] != null ? "\$${course['price']}" : "Free",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
+          return CourseCard(
+            title: course["title"],
+            imageUrl: "https://course-server.sahet-dev.com/storage/${course["thumbnail"]}",
+            description: course["description"],
+            price: course["price"] != null ? "\$${course["price"]}" : "Free",
+            onTap: () => _navigateToCourseDetail(course["id"]),
           );
         },
       ),
