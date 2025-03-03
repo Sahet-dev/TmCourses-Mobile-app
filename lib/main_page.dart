@@ -33,7 +33,7 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: const Text("Course Platform"),
+        title: const Text("Tm Courses"),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

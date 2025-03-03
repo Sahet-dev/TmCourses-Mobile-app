@@ -77,7 +77,7 @@ class _CatalogPageState extends State<CatalogPage> {
             title: course["title"],
             imageUrl: "https://course-server.sahet-dev.com/storage/${course["thumbnail"]}",
             description: course["description"],
-            price: course["price"] != null ? "\$${course["price"]}" : "Free",
+            price: course["price"] != null ? "${course["price"]}" : "Free",
             onTap: () => _navigateToCourseDetail(course["id"]),
           );
         },
