@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:course/services/auth_service.dart';
-
+import 'package:course/pages/emailverif.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,7 +16,6 @@ class _LoginPageState extends State<LoginPage> {
   bool isLoading = false;
   String errorMsg = "";
 
-  // Create an instance of FlutterSecureStorage
   final FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
   Future<void> login() async {
@@ -27,21 +25,28 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      ApiService apiService = ApiService();
-      Response response = await apiService.post('login', {
-        "email": emailController.text,
-        "password": passwordController.text
-      });
+      Dio dio = Dio();
+      Response response = await dio.post(
+        "https://course-server.sahet-dev.com/api/login",
+        data: {
+          "email": emailController.text,
+          "password": passwordController.text
+        },
+      );
 
       if (response.statusCode == 200) {
         String token = response.data["token"];
+        bool emailVerified = response.data["email_verified"] ?? false;
 
-        // Store token securely
         await secureStorage.write(key: 'token', value: token);
         print("Token saved securely: $token");
 
-        // Navigate to home
-        Navigator.pushReplacementNamed(context, "/home");
+        if (!emailVerified) {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => EmailVerificationPage()));
+        } else {
+          Navigator.pushReplacementNamed(context, "/home");
+        }
       }
     } catch (e) {
       setState(() {
@@ -55,7 +60,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,50 +67,35 @@ class _LoginPageState extends State<LoginPage> {
       body: Center(
         child: Container(
           width: 350,
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.95),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
+            boxShadow: [const BoxShadow(color: Colors.black26, blurRadius: 10)],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Login",
-                  style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87)),
-              SizedBox(height: 20),
+              const Text("Login", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
               TextField(
                 controller: emailController,
-                decoration: InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder()),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextField(
                 controller: passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()),
               ),
-              SizedBox(height: 10),
-              if (errorMsg.isNotEmpty)
-                Text(errorMsg, style: TextStyle(color: Colors.red)),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
+              if (errorMsg.isNotEmpty) Text(errorMsg, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: isLoading ? null : login,
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: Colors.blue.shade600,
-                ),
                 child: isLoading
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text("Login", style: TextStyle(fontSize: 16)),
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Login"),
               ),
             ],
           ),

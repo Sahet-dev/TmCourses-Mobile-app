@@ -29,6 +29,40 @@ class ApiService {
     ));
   }
 
+  Future<void> sendVerificationCode() async {
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+
+      Response response = await _dio.post(
+        '/send-verification-code',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      print(response.data['message']);
+    } catch (e) {
+      print("Error sending verification code: $e");
+    }
+  }
+
+  Future<bool> verifyCode(String code) async {
+    try {
+      String? token = await _secureStorage.read(key: 'token');
+
+      Response response = await _dio.post(
+        '/verify-code',
+        data: {'code': code},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      print(response.data['message']);
+      return true;
+    } catch (e) {
+      print("Error verifying code: $e");
+      return false;
+    }
+  }
+
+
   Future<Response> get(String endpoint) async {
     return await _dio.get(endpoint);
   }
